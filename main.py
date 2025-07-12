@@ -1,5 +1,4 @@
 import json
-from collections import defaultdict
 from typing import List, Dict, Optional, TypedDict
 
 
@@ -12,39 +11,39 @@ class Slot(TypedDict):
     patientName: Optional[str]
 
 
-class Availability(TypedDict):
+class ClinicStats(TypedDict):
+    clinicName: str
     total: int
     booked: int
-    available: int
-    availability_percent: int
 
 
-def calculate_clinic_availability(slots: List[Slot]) -> Dict[str, Availability]:
-    clinic_stats: Dict[str, Availability] = {}
+def calculate_clinic_availability(slots: List[Slot]) -> Dict[str, ClinicStats]:
+    clinic_stats: Dict[str, ClinicStats] = {}
 
     for slot in slots:
+        clinic_id = slot["clinicId"]
         clinic_name = slot["clinicName"]
-        
-        # Initialize if first time seen
-        if clinic_name not in clinic_stats:
-            clinic_stats[clinic_name] = {
+
+        if clinic_id not in clinic_stats:
+            clinic_stats[clinic_id] = {
+                "clinicName": clinic_name,
                 "total": 0,
                 "booked": 0,
-                "available": 0,
-                "availability_percent": 0,
             }
 
-        clinic_stats[clinic_name]["total"] += 1
+        clinic_stats[clinic_id]["total"] += 1
         if slot.get("booked", False):
-            clinic_stats[clinic_name]["booked"] += 1
-
-    for clinic, stats in clinic_stats.items():
-        stats["available"] = stats["total"] - stats["booked"]
-        stats["availability_percent"] = round(
-            (stats["available"] / stats["total"]) * 100
-        ) if stats["total"] > 0 else 0
+            clinic_stats[clinic_id]["booked"] += 1
 
     return clinic_stats
+
+
+def print_availability(clinic_stats: Dict[str, ClinicStats]) -> None:
+    for stats in clinic_stats.values():
+        available = stats["total"] - stats["booked"]
+        percent = round((available / stats["total"]) * 100) if stats["total"] > 0 else 0
+        print(f"{stats['clinicName']}: {percent}% availability "
+              f"({available} of {stats['total']} slots available)")
 
 
 if __name__ == "__main__":
@@ -52,7 +51,4 @@ if __name__ == "__main__":
         data: List[Slot] = json.load(f)
 
     results = calculate_clinic_availability(data)
-
-    for clinic, stats in results.items():
-        print(f"{clinic}: {stats['availability_percent']}% availability "
-              f"({stats['available']} of {stats['total']} slots available)")
+    print_availability(results)
