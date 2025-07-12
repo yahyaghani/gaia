@@ -20,15 +20,20 @@ class Availability(TypedDict):
 
 
 def calculate_clinic_availability(slots: List[Slot]) -> Dict[str, Availability]:
-    clinic_stats: Dict[str, Availability] = defaultdict(lambda: {
-        "total": 0,
-        "booked": 0,
-        "available": 0,
-        "availability_percent": 0,
-    })
+    clinic_stats: Dict[str, Availability] = {}
 
     for slot in slots:
         clinic_name = slot["clinicName"]
+        
+        # Initialize if first time seen
+        if clinic_name not in clinic_stats:
+            clinic_stats[clinic_name] = {
+                "total": 0,
+                "booked": 0,
+                "available": 0,
+                "availability_percent": 0,
+            }
+
         clinic_stats[clinic_name]["total"] += 1
         if slot.get("booked", False):
             clinic_stats[clinic_name]["booked"] += 1
@@ -39,7 +44,7 @@ def calculate_clinic_availability(slots: List[Slot]) -> Dict[str, Availability]:
             (stats["available"] / stats["total"]) * 100
         ) if stats["total"] > 0 else 0
 
-    return dict(clinic_stats)
+    return clinic_stats
 
 
 if __name__ == "__main__":
